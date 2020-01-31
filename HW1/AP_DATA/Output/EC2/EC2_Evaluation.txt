@@ -1,0 +1,23 @@
+ES Built-in:
+Uninterpolated mean average precision: 0.2922
+EC2: 0.2319
+
+Okapi TF:
+Uninterpolated mean average precision: 0.2352
+EC2: 0.1825
+
+TF-IDF:
+Uninterpolated mean average precision: 0.2942
+EC2:0.2613
+
+Okapi BM25:
+Uninterpolated mean average precision: 0.2877
+EC2:
+
+Unigram LM with Laplace Smoothing:
+Uninterpolated mean average precision: 0.2231
+EC2:
+
+Unigram LM with Jelinek-Mercer Smoothing:
+Uninterpolated mean average precision: 0.2242
+EC2:

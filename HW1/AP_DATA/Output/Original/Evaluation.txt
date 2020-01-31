@@ -1,0 +1,30 @@
+ES Built-in:
+Uninterpolated mean average precision: 0.2922
+Precision at 10: 0.432
+Precision at 30: 0.3427
+
+
+Okapi TF:
+Uninterpolated mean average precision: 0.2352
+Precision at 10: 0.4160
+Precision at 30: 0.3267
+
+TF-IDF:
+Uninterpolated mean average precision: 0.2942
+Precision at 10:  0.4240
+Precision at 30:  0.3547
+
+Okapi BM25:
+Uninterpolated mean average precision: 0.2877
+Precision at 10: 0.448
+Precision at 30: 0.360
+
+Unigram LM with Laplace Smoothing:
+Uninterpolated mean average precision: 0.2231
+Precision at 10: 0.4360
+Precision at 30: 0.3267
+
+Unigram LM with Jelinek-Mercer Smoothing:
+Uninterpolated mean average precision: 0.2242
+Precision at 10: 0.3440
+Precision at 30: 0.2960
