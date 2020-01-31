@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import regex
 import re
+import os
 from nltk.stem import PorterStemmer
 from collections import defaultdict
 from collections import OrderedDict
@@ -153,8 +154,9 @@ def find_ttf_and_df(offset_dict, term):
     return ttf, df
 
 
-
 doc_num_set = {}
+
+
 # Load inverted index into catalog to store term, offset, and length
 def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
     f = '%s%s.txt' %(file_name, inv_file_num)
@@ -221,47 +223,44 @@ def create_index(tokens, flag, inv_file):
 
 def get_tokens():
     path = "/Users/celiasherry/Documents/NE/Spring2020/IR/HW/HW2/Assignment2/AP_DATA/ap89_collection/"
-    filename = "ap890101"
+    #filename = "ap890101"
 
     num_docs = 0
-    num_files = 0
     length_dict = {}
     tokens = []
     flag = 1
     inv_file = 1
 
-    #for filename in os.listdir(path):
-       # num_files += 1
+    for filename in os.listdir(path):
+        f = open(path + filename)
+        documents = get_docs(f)
+        for document in documents:
+            num_docs += 1
+            # Get text of document
+            text = get_text(document)
+            # Get document ID
+            doc_id = document.find('DOCNO').get_text().strip()
+            # Get length of document- stop words are included
+            doc_length = get_document_length(text)
+            # Store length of document in dictionary
+            length_dict[doc_id] = doc_length
+            # Stem text to get word roots
+            stemmed_text = stem_text(text)
+            # Tokenize stemmed text
+            token_positions = tokenize(stemmed_text)
 
-    f = open(path + filename)
-    documents = get_docs(f)
-    for document in documents:
-        num_docs += 1
-        # Get text of document
-        text = get_text(document)
-        # Get document ID
-        doc_id = document.find('DOCNO').get_text().strip()
-        # Get length of document- stop words are included
-        doc_length = get_document_length(text)
-        # Store length of document in dictionary
-        length_dict[doc_id] = doc_length
-        # Stem text to get word roots
-        stemmed_text = stem_text(text)
-        # Tokenize stemmed text
-        token_positions = tokenize(stemmed_text)
+            # Add document id to each token so it is (term, position, document_id)
+            for token in token_positions:
+                token.append(doc_id)
+            # Add position tokens to list of all tokens
+            tokens += token_positions
 
-        # Add document id to each token so it is (term, position, document_id)
-        for token in token_positions:
-            token.append(doc_id)
-        # Add position tokens to list of all tokens
-        tokens += token_positions
+            if num_docs == 1000:
+                num_docs = 0
+                inv_file = create_index(tokens, flag, inv_file)
+                tokens = []
+                flag = 0
 
-        if num_docs == 1000:
-            num_docs = 0
-            inv_file = create_index(tokens, flag, inv_file)
-            tokens = []
-            flag = 0
-    #return tokens
     if num_docs < 1000:
         inv_file = create_index(tokens, flag, inv_file)
 
@@ -286,13 +285,57 @@ def pickler(path, ds):
     dill.dump(ds, f)
     f.close()
 
+
+def load_inverted_list(offset, length, inverted_file):
+    #inverted_list = OrderedDict()
+    inverted_file.seek(offset)
+    s = inverted_file.read(length)
+    doc_dict = OrderedDict()
+    rem_str = s.split(':')[1].split(';')
+    for item in rem_str:
+        doc_id = item.split(',')[0]
+        tf = int(item.split(',')[1])
+        position = [int(e) for e in item.split(',')[2:len(item.split(','))]]
+        doc_dict[doc_id] = Term(tf, position)
+    #inverted_list[term] = doc_dict
+    return doc_dict
+
+
+def merge_inverted_index_files():
+    term_dict = OrderedDict()
+    inverted_list = OrderedDict
+    catalog_file = open('Files/Stemmed/catalog_file.txt', 'a+')
+    for term in catalog.terms:
+        for file in catalog.terms[term]:
+            inverted_file = open(file)
+            inverted_list[term] = load_inverted_list(catalog.terms[term][file].offset, catalog.terms[term][file].length,
+                                               inverted_file)
+            inverted_file.close()
+            if term not in term_dict:
+                term_dict[term] = inverted_list[term]
+            else:
+                for doc_id in inverted_list[term]:
+                    if doc_id in term_dict[term]:
+                        term_dict[term][doc_id].tf = term_dict[term][doc_id].get_term_frequency() + 1
+                        term_dict[term][doc_id].position.extend(inverted_list[term][doc_id].position)
+                    else:
+                        term_dict[term][doc_id] = Term(inverted_list[term][doc_id].tf,
+                                                       inverted_list[term][doc_id].position)
+        term_dict[term] = OrderedDict(sorted(term_dict[term].items(), key=lambda x: x[1].tf, reverse=True))
+        if len(term_dict) == 1000:
+            load_catalog(term_dict, "Files/Stemmed/inverted_file", 0, catalog_file)
+            term_dict = {}
+    if len(term_dict) > 0:
+        load_catalog(term_dict, "Files/Stemmed/inverted_file", 0, catalog_file)
+    catalog_file.close()
+
+
 doc_map = {}
 catalog = Catalog()
-#print(get_document_length(get_text(get_tokens()[0])))
-#print(tokenize("this is a test. movies 1895 10.20 1,000 this"))
-#print(get_tokens())
-tokens = get_tokens()
-#print(tokens)
-#d = construct_offset_dict(tokens)
-#print(d)
-#print(d['people'])
+
+
+def main():
+    get_tokens()
+    merge_inverted_index_files()
+
+main()
