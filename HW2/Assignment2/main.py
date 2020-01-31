@@ -4,6 +4,7 @@ import re
 from nltk.stem import PorterStemmer
 from collections import defaultdict
 from collections import OrderedDict
+import dill
 
 # Store term frequency and term position
 class Term:
@@ -159,7 +160,7 @@ def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
     f = '%s%s.txt' %(file_name, inv_file_num)
     inv_file = open(f, "a+")
     for term in offset_dict:
-        # Sort dict by term frequency- most frequent are first
+        # Sort dict by term frequency- most frequent are first.  Specified by instructions to facilitate merging.
         offset_dict[term] = OrderedDict(sorted(offset_dict[term].items(), key=lambda x: x[1].tf, reverse=True))
         offset = inv_file.tell()
         ttf, df = find_ttf_and_df(offset_dict, term)
@@ -264,7 +265,26 @@ def get_tokens():
     if num_docs < 1000:
         inv_file = create_index(tokens, flag, inv_file)
 
+    pickler('Files/Stemmed/Pickles/termMap.p', catalog.term_map)
+    write_hash_map(catalog.term_map, 'term_map.txt')
 
+    pickler('Files/Stemmed/Pickles/docMap.p', doc_map)
+    write_hash_map(doc_map, 'docMap.txt')
+
+    pickler('Files/Stemmed/Pickles/lengthMap.p', length_dict)
+
+
+def write_hash_map(map, f_name):
+    map_file = open('Files/Stemmed/Maps/%s' % (f_name), 'a+')
+    for key, value in map.items():
+        map_file.write(str(key) + ',' + str(value) + '\n')
+    map_file.close()
+
+
+def pickler(path, ds):
+    f = open(path, 'wb')
+    dill.dump(ds, f)
+    f.close()
 
 doc_map = {}
 catalog = Catalog()
