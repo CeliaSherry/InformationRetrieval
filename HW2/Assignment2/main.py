@@ -6,6 +6,7 @@ from nltk.stem import PorterStemmer
 from collections import defaultdict
 from collections import OrderedDict
 import dill
+import gzip
 
 
 # Store term frequency and term position
@@ -155,7 +156,8 @@ def find_ttf_and_df(offset_dict, term):
 
 # Load inverted index into catalog to store term, offset, and length
 def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
-    f = '%s%s.txt' %(file_name, inv_file_num)
+    f = '%s%s.txt.gz' %(file_name, inv_file_num)
+    #inv_file = gzip.open(f, "wt+")
     inv_file = open(f, "a+")
     for term in offset_dict:
         # Sort dict by term frequency- most frequent are first.  Specified by instructions to facilitate merging.
@@ -201,6 +203,7 @@ def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
             catalog_file.write(str(term_id) + ',' + str(offset) + ',' + str(length) + '\n')
         else:
             temp_cat_file = open('Files/Stemmed/catalog_file%d.txt' % (inv_file_num), 'a+')
+            #temp_cat_file = gzip.open('Files/Stemmed/catalog_file%d.txt.gz' % (inv_file_num), 'wt+')
             temp_cat_file.write(str(term_id) + ',' + str(offset) + ',' + str(length) + '\n')
             temp_cat_file.close()
 
@@ -228,7 +231,7 @@ def get_tokens():
     inv_file = 1
 
     for filename in os.listdir(path):
-        f = open(path + filename)
+        f = open(path + filename, encoding='ISO-8859-1')
         documents = get_docs(f)
         for document in documents:
             num_docs += 1
@@ -297,10 +300,12 @@ def load_inverted_list(offset, length, inverted_file):
 
 def merge_inverted_index_files():
     term_dict = OrderedDict()
-    inverted_list = OrderedDict
+    inverted_list = OrderedDict()
+    #catalog_file = gzip.open('Files/Stemmed/catalog_file.txt.gz', "wt+")
     catalog_file = open('Files/Stemmed/catalog_file.txt', 'a+')
     for term in catalog.terms:
         for file in catalog.terms[term]:
+            #inverted_file = gzip.open(file, "rt")
             inverted_file = open(file)
             inverted_list[term] = load_inverted_list(catalog.terms[term][file].offset, catalog.terms[term][file].length,
                                                inverted_file)
