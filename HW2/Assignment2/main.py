@@ -7,6 +7,7 @@ from collections import defaultdict
 from collections import OrderedDict
 import dill
 
+
 # Store term frequency and term position
 class Term:
     def __init__(self, tf, position):
@@ -44,9 +45,6 @@ class CatalogTerm:
         self.offset = offset
         self.length = length
 
-
-# Initialize stemmer
-stemmer = PorterStemmer()
 
 # Read stoplist
 def get_stopwords():
@@ -144,6 +142,7 @@ def construct_offset_dict(given_tokens):
                 offset_dict[token[0]] = doc_dict
     return offset_dict
 
+
 # Find total term frequency and document frequency
 def find_ttf_and_df(offset_dict, term):
     ttf = 0
@@ -152,9 +151,6 @@ def find_ttf_and_df(offset_dict, term):
         df += 1
         ttf += offset_dict[term][doc_id].get_term_frequency()
     return ttf, df
-
-
-doc_num_set = {}
 
 
 # Load inverted index into catalog to store term, offset, and length
@@ -287,7 +283,6 @@ def pickler(path, ds):
 
 
 def load_inverted_list(offset, length, inverted_file):
-    #inverted_list = OrderedDict()
     inverted_file.seek(offset)
     s = inverted_file.read(length)
     doc_dict = OrderedDict()
@@ -297,7 +292,6 @@ def load_inverted_list(offset, length, inverted_file):
         tf = int(item.split(',')[1])
         position = [int(e) for e in item.split(',')[2:len(item.split(','))]]
         doc_dict[doc_id] = Term(tf, position)
-    #inverted_list[term] = doc_dict
     return doc_dict
 
 
@@ -330,8 +324,11 @@ def merge_inverted_index_files():
     catalog_file.close()
 
 
+# Initialize stemmer
+stemmer = PorterStemmer()
 doc_map = {}
 catalog = Catalog()
+doc_num_set = {}
 
 
 def main():
