@@ -3,6 +3,7 @@ import regex
 import re
 from nltk.stem import PorterStemmer
 from collections import defaultdict
+from collections import OrderedDict
 
 # Store term frequency and term position
 class Term:
@@ -16,6 +17,33 @@ class Term:
     def get_position(self):
         return self.position
 
+
+# Store terms, map of term id to term, file names that contain term, offset, and length
+class Catalog:
+    def __init__(self):
+        self.terms = {}
+        self.term_map = {}
+
+    def add_term(self, term, offset, length, file_name, term_id):
+        if term not in self.terms:
+            self.terms[term] = {}
+            self.term_map[term] = term_id
+        self.terms[term][file_name] = CatalogTerm(term, offset, length)
+
+    def remove_term(self, term):
+        del self.terms[term]
+        del self.term_map[term]
+
+
+# Store term, offset, and length
+class CatalogTerm:
+    def __init__(self, term, offset, length):
+        self.term = term
+        self.offset = offset
+        self.length = length
+
+
+# Initialize stemmer
 stemmer = PorterStemmer()
 
 # Read stoplist
@@ -114,17 +142,79 @@ def construct_offset_dict(given_tokens):
                 offset_dict[token[0]] = doc_dict
     return offset_dict
 
+# Find total term frequency and document frequency
+def find_ttf_and_df(offset_dict, term):
+    ttf = 0
+    df = 0
+    for doc_id in offset_dict[term]:
+        df += 1
+        ttf += offset_dict[term][doc_id].get_term_frequency()
+    return ttf, df
 
+
+
+doc_num_set = {}
+# Load inverted index into catalog to store term, offset, and length
 def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
     f = '%s%s.txt' %(file_name, inv_file_num)
+    inv_file = open(f, "a+")
+    for term in offset_dict:
+        # Sort dict by term frequency- most frequent are first
+        offset_dict[term] = OrderedDict(sorted(offset_dict[term].items(), key=lambda x: x[1].tf, reverse=True))
+        offset = inv_file.tell()
+        ttf, df = find_ttf_and_df(offset_dict, term)
+        if catalog_file != None:
+            term_id = catalog.term_map[term]
+            catalog.remove_term(term)
+        else:
+            if term not in catalog.term_map:
+                term_id = len(catalog.term_map) + 1
+            else:
+                term_id = catalog.term_map[term]
+        input_str = [str(term_id)]
+        input_str.append(',')
+        input_str.append(str(df))
+        input_str.append(',')
+        input_str.append(str(ttf))
+        input_str.append(':')
+        for doc in offset_dict[term]:
+            if catalog_file != None:
+                doc_id = doc
+            else:
+                if doc not in doc_num_set:
+                    doc_id = len(doc_map) + 1
+                    doc_num_set[doc] = doc_id
+                    doc_map[doc_id] = doc
+                else:
+                    doc_id = doc_num_set[doc]
+            input_str.append(str(doc_id))
+            input_str.append(',')
+            input_str.append(str(offset_dict[term][doc].get_term_frequency()))
+            input_str.append(',')
+            input_str.append(','.join(str(e) for e in offset_dict[term][doc].get_position()))
+            input_str.append(';')
+        input_str[len(input_str) - 1] = '\n'
+        write_str = ''.join(input_str)
+        length = len(write_str)
+        catalog.add_term(term, offset, length, f, term_id)
 
+        if catalog_file != None:
+            catalog_file.write(str(term_id) + ',' + str(offset) + ',' + str(length) + '\n')
+        else:
+            temp_cat_file = open('Files/Stemmed/catalog_file%d.txt' % (inv_file_num), 'a+')
+            temp_cat_file.write(str(term_id) + ',' + str(offset) + ',' + str(length) + '\n')
+            temp_cat_file.close()
+
+        inv_file.write(write_str)
+    inv_file.close()
+    return inv_file_num + 1
 
 
 def create_index(tokens, flag, inv_file):
     # Make dictionary of terms- offsets dictionary
     offset_dict = construct_offset_dict(tokens)
     # Create inverted file
-    inv_file = load_catalog(offset_dict, "inverted_file", inv_file)
+    inv_file = load_catalog(offset_dict, "Files/Stemmed/inverted_file", inv_file)
     return inv_file
 
 
@@ -170,15 +260,19 @@ def get_tokens():
             inv_file = create_index(tokens, flag, inv_file)
             tokens = []
             flag = 0
+    #return tokens
     if num_docs < 1000:
         inv_file = create_index(tokens, flag, inv_file)
 
 
 
+doc_map = {}
+catalog = Catalog()
 #print(get_document_length(get_text(get_tokens()[0])))
 #print(tokenize("this is a test. movies 1895 10.20 1,000 this"))
 #print(get_tokens())
 tokens = get_tokens()
-print(tokens)
+#print(tokens)
 #d = construct_offset_dict(tokens)
+#print(d)
 #print(d['people'])
