@@ -156,7 +156,7 @@ def find_ttf_and_df(offset_dict, term):
 
 # Load inverted index into catalog to store term, offset, and length
 def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
-    f = '%s%s.txt.gz' %(file_name, inv_file_num)
+    f = '%s%s.txt' %(file_name, inv_file_num)
     #inv_file = gzip.open(f, "wt+")
     inv_file = open(f, "a+")
     for term in offset_dict:
