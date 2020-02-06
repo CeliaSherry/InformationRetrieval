@@ -345,4 +345,4 @@ def main():
     merge_inverted_index_files()
     pickler('Files/Stemmed/Pickles/catalog.p', catalog.terms)
 
-main()
+#main()

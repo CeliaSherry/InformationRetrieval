@@ -1,6 +1,8 @@
 import dill
 from collections import OrderedDict
-from main import Term
+from main import Term, get_stopwords
+from string import digits
+import re
 
 
 def unpickler(file):
@@ -63,11 +65,53 @@ def term_api(term, catalog, term_map, doc_map):
     return inverted_list, term_info
 
 
+def clean_queries():
+    f = open('queries.txt', 'r')
+    queries = []
+    for line in f:
+        queries.append(re.sub('[\-\.\"\s]+', ' ', line).strip().translate(digits))
+    return queries
 
 
+def get_keywords(query):
+    stopwords = get_stopwords()
+    keywords = []
+    for word in query:
+        if word not in stopwords:
+            keywords.append(word)
 
 
+# Gets inverted list for queries and pickles them
+def get_query_vectors(query, catalog, term_map, doc_map):
+    query_num = int(query.split()[0])
+    term_vector = OrderedDict()
+    term_stats = OrderedDict()
+    keywords = get_keywords(query.split()[1:])
+    for key in keywords:
+        key = key.lower()
+        inverted_list, term_info = term_api(key, catalog, term_map, doc_map)
+        term_vector.update(inverted_list)
+        term_stats.update(term_info)
+    f = open('Files/Stemmed/Pickles/termStats%s.p' % query_num, 'wb')
+    dill.dump(term_stats, f)
+    f.close()
+    f = open('Files/Stemmed/Pickles/termVector%s.p' % query_num, 'wb')
+    dill.dump(term_vector, f)
+    f.close()
 
 
 def main():
     term_map, catalog, doc_length, doc_map, avg_doc_length, vocab = get_files()
+    queries = clean_queries()
+    q_num = 0
+    for query in queries:
+        q_num += 1
+        get_query_vectors(query, catalog, term_map, doc_map)
+        print("Created %d vector" % q_num)
+
+
+    #inverted_list, term_info = term_api('govern', catalog, term_map, doc_map)
+    #print(term_info)
+
+main()
+
