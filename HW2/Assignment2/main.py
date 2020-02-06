@@ -229,8 +229,12 @@ def get_tokens():
     tokens = []
     flag = 1
     inv_file = 1
+    file_no = 0
+    file_total = len(os.listdir(path))-1
 
     for filename in os.listdir(path):
+        file_no +=1
+        print('Indexing ' + str(file_no) + ' out of ' + str(file_total))
         f = open(path + filename, encoding='ISO-8859-1')
         documents = get_docs(f)
         for document in documents:
@@ -339,5 +343,6 @@ doc_num_set = {}
 def main():
     get_tokens()
     merge_inverted_index_files()
+    pickler('Files/Stemmed/Pickles/catalog.p', catalog.terms)
 
 main()
