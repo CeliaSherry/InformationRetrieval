@@ -66,7 +66,7 @@ def term_api(term, catalog, term_map, doc_map):
 
 
 def clean_queries():
-    f = open('queries.txt', 'r')
+    f = open('AP_DATA/queries.txt', 'r')
     queries = []
     for line in f:
         queries.append(re.sub('[\-\.\"\s]+', ' ', line).strip().translate(digits))
@@ -79,6 +79,7 @@ def get_keywords(query):
     for word in query:
         if word not in stopwords:
             keywords.append(word)
+    return keywords
 
 
 # Gets inverted list for queries and pickles them
