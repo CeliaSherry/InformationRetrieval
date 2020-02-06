@@ -3,6 +3,7 @@ from collections import OrderedDict
 from main import Term, get_stopwords
 from string import digits
 import re
+from nltk.stem import PorterStemmer
 
 
 def unpickler(file):
@@ -89,7 +90,7 @@ def get_query_vectors(query, catalog, term_map, doc_map):
     term_stats = OrderedDict()
     keywords = get_keywords(query.split()[1:])
     for key in keywords:
-        key = key.lower()
+        key = stemmer.stem(key).lower()
         inverted_list, term_info = term_api(key, catalog, term_map, doc_map)
         term_vector.update(inverted_list)
         term_stats.update(term_info)
@@ -101,6 +102,7 @@ def get_query_vectors(query, catalog, term_map, doc_map):
     f.close()
 
 
+stemmer = PorterStemmer()
 def main():
     term_map, catalog, doc_length, doc_map, avg_doc_length, vocab = get_files()
     queries = clean_queries()
