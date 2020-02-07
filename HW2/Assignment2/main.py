@@ -46,6 +46,9 @@ class CatalogTerm:
         self.offset = offset
         self.length = length
 
+    def get_term(self):
+        return self.term
+
 
 # Read stoplist
 def get_stopwords():
@@ -155,18 +158,18 @@ def find_ttf_and_df(offset_dict, term):
 
 
 # Load inverted index into catalog to store term, offset, and length
-def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
+def load_catalog(term_dict, file_name, inv_file_num, catalog_file=None):
     f = '%s%s.txt' %(file_name, inv_file_num)
     #inv_file = gzip.open(f, "wt+")
     inv_file = open(f, "a+")
-    for term in offset_dict:
+    for term in term_dict:
         # Sort dict by term frequency- most frequent are first.  Specified by instructions to facilitate merging.
-        offset_dict[term] = OrderedDict(sorted(offset_dict[term].items(), key=lambda x: x[1].tf, reverse=True))
+        term_dict[term] = OrderedDict(sorted(term_dict[term].items(), key=lambda x: x[1].tf, reverse=True))
         offset = inv_file.tell()
-        ttf, df = find_ttf_and_df(offset_dict, term)
-        if catalog_file != None:
+        ttf, df = find_ttf_and_df(term_dict, term)
+        if catalog_file is not None:
             term_id = catalog.term_map[term]
-            catalog.remove_term(term)
+            #catalog.remove_term(term)
         else:
             if term not in catalog.term_map:
                 term_id = len(catalog.term_map) + 1
@@ -178,8 +181,8 @@ def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
         input_str.append(',')
         input_str.append(str(ttf))
         input_str.append(':')
-        for doc in offset_dict[term]:
-            if catalog_file != None:
+        for doc in term_dict[term]:
+            if catalog_file is not None:
                 doc_id = doc
             else:
                 if doc not in doc_num_set:
@@ -190,16 +193,16 @@ def load_catalog(offset_dict, file_name, inv_file_num, catalog_file = None):
                     doc_id = doc_num_set[doc]
             input_str.append(str(doc_id))
             input_str.append(',')
-            input_str.append(str(offset_dict[term][doc].get_term_frequency()))
+            input_str.append(str(term_dict[term][doc].get_term_frequency()))
             input_str.append(',')
-            input_str.append(','.join(str(e) for e in offset_dict[term][doc].get_position()))
+            input_str.append(','.join(str(e) for e in term_dict[term][doc].get_position()))
             input_str.append(';')
         input_str[len(input_str) - 1] = '\n'
         write_str = ''.join(input_str)
         length = len(write_str)
         catalog.add_term(term, offset, length, f, term_id)
 
-        if catalog_file != None:
+        if catalog_file is not None:
             catalog_file.write(str(term_id) + ',' + str(offset) + ',' + str(length) + '\n')
         else:
             temp_cat_file = open('Files/Stemmed/catalog_file%d.txt' % (inv_file_num), 'a+')
@@ -289,30 +292,35 @@ def pickler(path, ds):
     f.close()
 
 
-def load_inverted_list(offset, length, inverted_file):
+def load_inverted_list(offset, length, inverted_file, term, doc_map=None):
+    inverted_list = OrderedDict()
     inverted_file.seek(offset)
     s = inverted_file.read(length)
     doc_dict = OrderedDict()
     rem_str = s.split(':')[1].split(';')
     for item in rem_str:
-        doc_id = item.split(',')[0]
+        doc_no = item.split(',')[0]
+        if doc_map is not None:
+            doc_id = doc_map.get(int(doc_no))
+        else:
+            doc_id = doc_no
         tf = int(item.split(',')[1])
         position = [int(e) for e in item.split(',')[2:len(item.split(','))]]
         doc_dict[doc_id] = Term(tf, position)
-    return doc_dict
+    inverted_list[term] = doc_dict
+    return inverted_list
 
 
 def merge_inverted_index_files():
     term_dict = OrderedDict()
-    inverted_list = OrderedDict()
     #catalog_file = gzip.open('Files/Stemmed/catalog_file.txt.gz', "wt+")
     catalog_file = open('Files/Stemmed/catalog_file.txt', 'a+')
     for term in catalog.terms:
         for file in catalog.terms[term]:
             #inverted_file = gzip.open(file, "rt")
             inverted_file = open(file)
-            inverted_list[term] = load_inverted_list(catalog.terms[term][file].offset, catalog.terms[term][file].length,
-                                               inverted_file)
+            inverted_list = load_inverted_list(catalog.terms[term][file].offset, catalog.terms[term][file].length,
+                                               inverted_file, term)
             inverted_file.close()
             if term not in term_dict:
                 term_dict[term] = inverted_list[term]
@@ -343,6 +351,6 @@ doc_num_set = {}
 def main():
     get_tokens()
     merge_inverted_index_files()
-    pickler('Files/Stemmed/Pickles/catalog.p', catalog.terms)
+    #pickler('Files/Stemmed/Pickles/catalog.p', catalog.terms)
 
-#main()
+main()

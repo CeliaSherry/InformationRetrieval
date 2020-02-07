@@ -103,6 +103,8 @@ def get_query_vectors(query, catalog, term_map, doc_map):
 
 
 stemmer = PorterStemmer()
+
+
 def main():
     term_map, catalog, doc_length, doc_map, avg_doc_length, vocab = get_files()
     queries = clean_queries()
@@ -116,5 +118,5 @@ def main():
     #inverted_list, term_info = term_api('govern', catalog, term_map, doc_map)
     #print(term_info)
 
-main()
+#main()
 
