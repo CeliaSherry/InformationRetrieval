@@ -70,6 +70,7 @@ def clean_queries():
     f = open('AP_DATA/queries.txt', 'r')
     queries = []
     for line in f:
+        line = line.replace("'", " ")
         queries.append(re.sub('[\-\.\"\s]+', ' ', line).strip().translate(digits))
     return queries
 
@@ -118,5 +119,5 @@ def main():
     #inverted_list, term_info = term_api('govern', catalog, term_map, doc_map)
     #print(term_info)
 
-#main()
+main()
 
