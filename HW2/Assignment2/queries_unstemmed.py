@@ -40,28 +40,29 @@ def term_api(term, catalog, term_map, doc_map):
     index_file = open("Files/Unstemmed/inverted_file0.txt", 'r')
 
     # Find offset and read line
-    k = str(term_map[term])
-    offset = catalog[k][0]
-    index_file.seek(int(offset))
-    line = index_file.readline()
+    if term in term_map:
+        k = str(term_map[term])
+        offset = catalog[k][0]
+        index_file.seek(int(offset))
+        line = index_file.readline()
 
-    # Get DF (structured as [docId, DF, TTF] after colon)
-    df = line.split(':')[0].split(',')[1]
-    ttf = line.split(':')[0].split(',')[2]
-    # Store in term info dictionary
-    term_info[term] = [df, ttf]
+        # Get DF (structured as [docId, DF, TTF] after colon)
+        df = line.split(':')[0].split(',')[1]
+        ttf = line.split(':')[0].split(',')[2]
+        # Store in term info dictionary
+        term_info[term] = [df, ttf]
 
-    # Get inverted list for term- docs are separated by ; and structured (doc_num, tf, positions)
-    s = line.split(':')[1].split(';')
-    for d in s:
-        doc_number = d.split(',')[0]
-        # Use doc map dictionary to map document number to document id
-        doc_id = doc_map.get(int(doc_number))
-        tf = int(d.split(',')[1])
-        positions = [int(e) for e in d.split(',')[2:len(d.split(','))]]
-        doc_dict[doc_id] = Term(tf, positions)
-    inverted_list[term] = doc_dict
-    index_file.close()
+        # Get inverted list for term- docs are separated by ; and structured (doc_num, tf, positions)
+        s = line.split(':')[1].split(';')
+        for d in s:
+            doc_number = d.split(',')[0]
+            # Use doc map dictionary to map document number to document id
+            doc_id = doc_map.get(int(doc_number))
+            tf = int(d.split(',')[1])
+            positions = [int(e) for e in d.split(',')[2:len(d.split(','))]]
+            doc_dict[doc_id] = Term(tf, positions)
+        inverted_list[term] = doc_dict
+        index_file.close()
     return inverted_list, term_info
 
 
