@@ -6,6 +6,8 @@ from nltk.stem import PorterStemmer
 from collections import defaultdict
 from collections import OrderedDict
 import dill
+import pickle
+import zlib
 import gzip
 
 
@@ -158,16 +160,21 @@ def find_ttf_and_df(offset_dict, term):
 
 
 # Load inverted index into catalog to store term, offset, and length
-def load_catalog(term_dict, file_name, inv_file_num, catalog_file=None):
+def load_catalog(term_dict, file_name, inv_file_num, catalog_file=None, demo=0):
     f = '%s%s.txt' %(file_name, inv_file_num)
     #inv_file = gzip.open(f, "wt+")
+    #if inv_file_num == 0:
+        #inv_file = open(f, "wb+")
+    #else:
     inv_file = open(f, "a+")
     for term in term_dict:
         # Sort dict by term frequency- most frequent are first.  Specified by instructions to facilitate merging.
         term_dict[term] = OrderedDict(sorted(term_dict[term].items(), key=lambda x: x[1].tf, reverse=True))
         offset = inv_file.tell()
         ttf, df = find_ttf_and_df(term_dict, term)
-        if catalog_file is not None:
+        if demo == 1:
+            term_id = term
+        elif catalog_file is not None:
             term_id = catalog.term_map[term]
             #catalog.remove_term(term)
         else:
@@ -203,13 +210,19 @@ def load_catalog(term_dict, file_name, inv_file_num, catalog_file=None):
         catalog.add_term(term, offset, length, f, term_id)
 
         if catalog_file is not None:
+            #byte_length = len(zlib.compress(write_str.encode()))
             catalog_file.write(str(term_id) + ',' + str(offset) + ',' + str(length) + '\n')
         else:
-            temp_cat_file = open('Files/Stemmed/catalog_file%d.txt' % (inv_file_num), 'a+')
-            #temp_cat_file = gzip.open('Files/Stemmed/catalog_file%d.txt.gz' % (inv_file_num), 'wt+')
+            temp_cat_file = open('Files/Demo/catalog_file%d.txt' % (inv_file_num), 'a+')
             temp_cat_file.write(str(term_id) + ',' + str(offset) + ',' + str(length) + '\n')
             temp_cat_file.close()
 
+        #if inv_file_num == 0:
+            #a = zlib.compress(write_str.encode())
+            #inv_file.write(a)
+            #test = open("Files/Demo/test", "a+")
+            #test.write(write_str)
+        #else:
         inv_file.write(write_str)
     inv_file.close()
     return inv_file_num + 1
@@ -219,7 +232,8 @@ def create_index(tokens, flag, inv_file):
     # Make dictionary of terms- offsets dictionary
     offset_dict = construct_offset_dict(tokens)
     # Create inverted file
-    inv_file = load_catalog(offset_dict, "Files/Stemmed/inverted_file", inv_file)
+    #inv_file = load_catalog(offset_dict, "Files/Stemmed/inverted_file", inv_file)
+    inv_file = load_catalog(offset_dict, "Files/Demo/inverted_file", inv_file)
     return inv_file
 
 
@@ -270,17 +284,24 @@ def get_tokens():
     if num_docs < 1000:
         inv_file = create_index(tokens, flag, inv_file)
 
-    pickler('Files/Stemmed/Pickles/termMap.p', catalog.term_map)
+    #pickler('Files/Stemmed/Pickles/termMap.p', catalog.term_map)
+    pickler('Files/Demo/Pickles/termMap.p', catalog.term_map)
     write_hash_map(catalog.term_map, 'term_map.txt')
 
-    pickler('Files/Stemmed/Pickles/docMap.p', doc_map)
+    #pickler('Files/Stemmed/Pickles/docMap.p', doc_map)
+    pickler('Files/Demo/Pickles/docMap.p', doc_map)
     write_hash_map(doc_map, 'docMap.txt')
 
-    pickler('Files/Stemmed/Pickles/lengthMap.p', length_dict)
+    #pickler('Files/Stemmed/Pickles/lengthMap.p', length_dict)
+    pickler('Files/Demo/Pickles/lengthMap.p', length_dict)
+
+    #pickler('Files/Stemmed/Pickles/catalog.p', catalog.terms)
+    pickler('Files/Demo/Pickles/catalog.p', catalog.terms)
 
 
 def write_hash_map(map, f_name):
-    map_file = open('Files/Stemmed/Maps/%s' % (f_name), 'a+')
+    #map_file = open('Files/Stemmed/Maps/%s' % (f_name), 'a+')
+    map_file = open('Files/Demo/Maps/%s' % (f_name), 'a+')
     for key, value in map.items():
         map_file.write(str(key) + ',' + str(value) + '\n')
     map_file.close()
@@ -290,6 +311,13 @@ def pickler(path, ds):
     f = open(path, 'wb')
     dill.dump(ds, f)
     f.close()
+
+
+def unpickler(file):
+    f = open(file, 'rb')
+    ds = dill.load(f)
+    f.close()
+    return ds
 
 
 def load_inverted_list(offset, length, inverted_file, term, doc_map=None):
@@ -313,13 +341,14 @@ def load_inverted_list(offset, length, inverted_file, term, doc_map=None):
 
 def merge_inverted_index_files():
     term_dict = OrderedDict()
-    #catalog_file = gzip.open('Files/Stemmed/catalog_file.txt.gz', "wt+")
-    catalog_file = open('Files/Stemmed/catalog_file.txt', 'a+')
-    for term in catalog.terms:
-        for file in catalog.terms[term]:
-            #inverted_file = gzip.open(file, "rt")
+    #catalog_file = open('Files/Stemmed/catalog_file.txt', 'a+')
+    catalog_file = open('Files/Demo/catalog_file.txt', 'a+')
+    #catalog_terms = unpickler('Files/Stemmed/Pickles/catalog.p')
+    catalog_terms = unpickler('Files/Demo/Pickles/catalog.p')
+    for term in catalog_terms:
+        for file in catalog_terms[term]:
             inverted_file = open(file)
-            inverted_list = load_inverted_list(catalog.terms[term][file].offset, catalog.terms[term][file].length,
+            inverted_list = load_inverted_list(catalog_terms[term][file].offset, catalog_terms[term][file].length,
                                                inverted_file, term)
             inverted_file.close()
             if term not in term_dict:
@@ -334,11 +363,65 @@ def merge_inverted_index_files():
                                                        inverted_list[term][doc_id].position)
         term_dict[term] = OrderedDict(sorted(term_dict[term].items(), key=lambda x: x[1].tf, reverse=True))
         if len(term_dict) == 1000:
-            load_catalog(term_dict, "Files/Stemmed/inverted_file", 0, catalog_file)
+            #load_catalog(term_dict, "Files/Stemmed/inverted_file", 0, catalog_file)
+            load_catalog(term_dict, "Files/Demo/inverted_file", 0, catalog_file)
             term_dict = {}
     if len(term_dict) > 0:
-        load_catalog(term_dict, "Files/Stemmed/inverted_file", 0, catalog_file)
+        #load_catalog(term_dict, "Files/Stemmed/inverted_file", 0, catalog_file)
+        load_catalog(term_dict, "Files/Demo/inverted_file", 0, catalog_file)
     catalog_file.close()
+
+
+def combine_inverted_index(i1, i2, term):
+    inverted_list = OrderedDict()
+    doc_dict = {}
+    for item in i1[term]:
+        doc_dict[item] = i1[term][item]
+    for item in i2[term]:
+        doc_dict[item] = i2[term][item]
+    inverted_list[term] = doc_dict
+    return inverted_list
+
+
+
+def merge_files(file1, file2, catalog1, catalog2, output_file):
+    print('Merging files')
+    term_dict = OrderedDict()
+    catalog_file = open('Files/Demo/merged_catalog_file.txt', 'a+')
+
+    f1 = open(file1, "r")
+    f2 = open(file2, "r")
+
+    cat1 = parse_catalog(catalog1)
+    cat2 = parse_catalog(catalog2)
+
+    for term in cat1:
+        offset = int(cat1[term][0])
+        length = int(cat1[term][1])
+        inverted_index = load_inverted_list(offset, length, f1, term)
+        if term in cat2:
+            offset2 = int(cat2[term][0])
+            length2 = int(cat2[term][1])
+            inverted_index2 = load_inverted_list(offset2, length2, f2, term)
+            inverted_index = combine_inverted_index(inverted_index, inverted_index2, term)
+        term_dict[term] = inverted_index[term]
+    for term2 in cat2:
+        if term2 not in cat1:
+            offset = int(cat2[term2][0])
+            length = int(cat2[term2][1])
+            inverted_index = load_inverted_list(offset, length, f2, term2)
+            term_dict[term2] = inverted_index[term2]
+    load_catalog(term_dict, output_file, 0, catalog_file,1)
+
+
+def parse_catalog(file):
+    catalog = {}
+    catalog_file = open(file, 'r')
+    for line in catalog_file.readlines():
+        text = line.strip().split(',')
+        catalog[text[0]] = text[1:]
+    return catalog
+
 
 
 # Initialize stemmer
@@ -351,6 +434,6 @@ doc_num_set = {}
 def main():
     get_tokens()
     merge_inverted_index_files()
-    #pickler('Files/Stemmed/Pickles/catalog.p', catalog.terms)
 
-main()
+#main()
+#merge_files('Files/Demo/inverted_file1.txt', 'Files/Demo/inverted_file2.txt', 'Files/Demo/catalog_file1.txt', 'Files/Demo/catalog_file2.txt','Files/Demo/merged_invertedfile.txt')
