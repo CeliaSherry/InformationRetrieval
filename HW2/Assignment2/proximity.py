@@ -1,10 +1,14 @@
-from main import Term
 from queries import get_files
 from queries import clean_queries
 from queries import unpickler
 from collections import defaultdict
 from operator import itemgetter
-import math
+from collections import OrderedDict
+import dill
+import re
+from nltk.stem import PorterStemmer
+from queries import get_keywords, term_api
+from string import digits
 
 
 # Get query numbers
@@ -21,7 +25,9 @@ def restructure_vector(term_vector):
     dict_doc_id = defaultdict(lambda: defaultdict(list))
     for key in term_vector:
         for doc_id in term_vector[key]:
-            dict_doc_id[doc_id][key] = [term_vector[key][doc_id].get_term_frequency(), term_vector[key][doc_id].get_position()]
+            t = list(set(term_vector[key][doc_id].get_position()))
+            t.sort()
+            dict_doc_id[doc_id][key] = [len(t),t]
     return dict_doc_id
 
 
@@ -46,6 +52,7 @@ def window_range(positions):
             new_pos = positions[smallest_word][min_pos + 1]
             word_positions[smallest_word] = new_pos
         else:
+            #print(smallest_word)
             word_positions.pop(smallest_word)
         # Check if range is smaller than minimum range.  Replace if so.
         if current_range < min_range:
@@ -58,7 +65,11 @@ def proximity(query, term_vector, doc_info, vocab):
     doc_dict = restructure_vector(term_vector)
     positions = {}
     c = 1500
+    num_docs = 1
     for doc_id in doc_dict:
+        #print(str(num_docs) + ' out of ' + str(len(doc_dict)))
+        #print(doc_id)
+        num_docs += 1
         i = 0
         length = int(doc_info.get(doc_id))
         for word in doc_dict[doc_id]:
@@ -66,9 +77,10 @@ def proximity(query, term_vector, doc_info, vocab):
             # Keep track of number of words in document from query
             i += 1
         # positions is dict with query words and keys are list of positions
-        smallest_range = window_range(positions)
-        score = (c - smallest_range) * i / (length + vocab)
-        doc_score.append([doc_id, score])
+        if i > 1:
+            smallest_range = window_range(positions)
+            score = (c - smallest_range) * i / (length + vocab)
+            doc_score.append([doc_id, score])
     doc_score.sort(key=itemgetter(1), reverse=True)
     with open('Files/Stemmed/Results/proximity.txt', 'a+') as results:
         rank = 1
@@ -79,16 +91,56 @@ def proximity(query, term_vector, doc_info, vocab):
             rank += 1
 
 
+def get_queries():
+    f = open('AP_DATA/proximity_queries.txt', 'r')
+    new_queries = []
+    for line in f:
+        line = line.replace("'", " ")
+        line = line.replace(",", " ")
+        line = line.replace("-", " ")
+        line = line.replace("(", "")
+        line = line.replace(")", "")
+        new_queries.append(re.sub('[\-\.\"\s]+', ' ', line).strip().translate(digits))
+    return new_queries
+
+
+# Gets inverted list for queries and pickles them
+def get_query_vectors(query, catalog, term_map, doc_map):
+    query_num = int(query.split()[0])
+    term_vector = OrderedDict()
+    keywords = get_keywords(query.split()[1:])
+    for key in keywords:
+        key = stemmer.stem(key).lower()
+        inverted_list, term_info = term_api(key, catalog, term_map, doc_map)
+        term_vector.update(inverted_list)
+    f = open('Files/Stemmed/Pickles/termVectorProximity%s.p' % query_num, 'wb')
+    dill.dump(term_vector, f)
+    f.close()
+
+
+def queries():
+    term_map, catalog, doc_length, doc_map, avg_doc_length, vocab = get_files()
+    new_queries = get_queries()
+    q_num = 0
+    for query in new_queries:
+        q_num += 1
+        get_query_vectors(query, catalog, term_map, doc_map)
+        print("Created %d vector" % q_num)
+
+
 
 def main():
     term_map, catalog, doc_length, doc_map, avg_doc_length, vocab = get_files()
-    queries = get_query_numbers()
-    for query in queries:
-        term_stats = unpickler('Files/Stemmed/Pickles/termStatsProximity%s.p' % query)
+    query_nums = get_query_numbers()
+    for query in query_nums:
+    #query = 80
         term_vector = unpickler('Files/Stemmed/Pickles/termVectorProximity%s.p' % query)
+        print('Running %s query' % query)
         proximity(query, term_vector, doc_length, vocab)
 
 
+#stemmer = PorterStemmer()
+#queries()
 #main()
 
 
