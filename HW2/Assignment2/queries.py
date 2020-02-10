@@ -4,6 +4,15 @@ from main import Term, get_stopwords
 from string import digits
 import re
 from nltk.stem import PorterStemmer
+from collections import defaultdict
+
+
+def restructure_vector(term_vector):
+    dict_doc_id = defaultdict(lambda: defaultdict(list))
+    for key in term_vector:
+        for doc_id in term_vector[key]:
+            dict_doc_id[doc_id][key] = [term_vector[key][doc_id].get_term_frequency(), term_vector[key][doc_id].get_position()]
+    return dict_doc_id
 
 
 def unpickler(file):
@@ -102,8 +111,8 @@ def get_query_vectors(query, catalog, term_map, doc_map):
     dill.dump(term_vector, f)
     f.close()
 
-
 stemmer = PorterStemmer()
+
 
 
 def main():
@@ -119,5 +128,9 @@ def main():
     #inverted_list, term_info = term_api('govern', catalog, term_map, doc_map)
     #print(term_info)
 
-main()
-
+#main()
+term_map, catalog, doc_length, doc_map, avg_doc_length, vocab = get_files()
+inverted_list, term_info = term_api('govern', catalog, term_map, doc_map)
+print(term_info)
+v = restructure_vector(inverted_list)
+print(v['AP890417-0155'])

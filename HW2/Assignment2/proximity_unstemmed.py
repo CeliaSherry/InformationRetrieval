@@ -1,13 +1,13 @@
-from queries import get_files
-from queries import clean_queries
-from queries import unpickler
+from queries_unstemmed import get_files
+from queries_unstemmed import clean_queries
+from queries_unstemmed import unpickler
 from collections import defaultdict
 from operator import itemgetter
 from collections import OrderedDict
 import dill
 import re
 from nltk.stem import PorterStemmer
-from queries import get_keywords, term_api
+from queries_unstemmed import get_keywords, term_api
 from string import digits
 
 
@@ -99,7 +99,7 @@ def proximity(query, term_vector, doc_info, vocab):
         if doc_id == 'AP891016-0226':
             print(score)
     doc_score.sort(key=itemgetter(1), reverse=True)
-    with open('Files/Stemmed/Results/proximity.txt', 'a+') as results:
+    with open('Files/Unstemmed/Results/proximity.txt', 'a+') as results:
         rank = 1
         for ds in doc_score:
             results.write('%s Q0 %s %d %lf Exp\n' % (query, ds[0], rank, ds[1]))
@@ -127,10 +127,11 @@ def get_query_vectors(query, catalog, term_map, doc_map):
     term_vector = OrderedDict()
     keywords = get_keywords(query.split()[1:])
     for key in keywords:
-        key = stemmer.stem(key).lower()
+        #key = stemmer.stem(key).lower()
+        key = key.lower()
         inverted_list, term_info = term_api(key, catalog, term_map, doc_map)
         term_vector.update(inverted_list)
-    f = open('Files/Stemmed/Pickles/termVectorProximity%s.p' % query_num, 'wb')
+    f = open('Files/Unstemmed/Pickles/termVectorProximity%s.p' % query_num, 'wb')
     dill.dump(term_vector, f)
     f.close()
 
@@ -151,12 +152,12 @@ def main():
     query_nums = get_query_numbers()
     for query in query_nums:
     #query = 80
-        term_vector = unpickler('Files/Stemmed/Pickles/termVectorProximity%s.p' % query)
+        term_vector = unpickler('Files/Unstemmed/Pickles/termVectorProximity%s.p' % query)
         print('Running %s query' % query)
         proximity(query, term_vector, doc_length, vocab)
 
 
-stemmer = PorterStemmer()
+#stemmer = PorterStemmer()
 #queries()
 #main()
 
