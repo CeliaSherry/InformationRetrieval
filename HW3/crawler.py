@@ -1,8 +1,11 @@
 from urllib.parse import urlparse, urljoin
 from urllib.robotparser import RobotFileParser
 import json
+from bs4 import BeautifulSoup
+import pickle
 
 robots_dict = {}
+outlinks_dict = {}
 
 
 # Canonicalize URLs to use as IDs
@@ -43,7 +46,36 @@ def check_robot(url):
 
 
 # Returns HTML from url, the <p> body of HTML, the <h> header of HTML, and the title of HTML
+# Adds outlinks for page to outlinks dict
 def parse_page(url, http_response, outlinks):
+    outlinks = []
+
+    raw = http_response.read()
+    # Use BeautifulSoup to parse raw HTML
+    soup = BeautifulSoup(raw, 'html.parser')
+    header = ' '.join(http_response.info())
+
+    # Page title
+    title = soup.title.string
+
+    # Page body
+    body = [''.join(s.findAll(text=True)) for s in soup.findAll('p')]
+    body = ' '.join(body)
+
+    # Base url
+    base = urlparse(url)[0] + '://' + urlparse(url)[1] + urlparse(url)[2]
+
+    # Get outlinks
+    for a in soup.find_all('a', href=True):
+        link = url_canonicalization(a['href'], base)
+        if ('javascript' not in link) and ('.pdf' not in link):
+            frontier.insert(Key(link))
+            outlinks.append(link)
+    outlinks_dict[url] = outlinks
+    return raw, body, header, title
+
+
+
 
 
 
