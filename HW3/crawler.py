@@ -162,7 +162,17 @@ def crawl(frontier, limit=1):
     dump_outlinks()
 
 
-
+seed_urls = [
+    'http://www.history.com/topics/world-war-ii',
+    'http://en.wikipedia.org/wiki/World_War_II',
+    'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
+    'http://en.wikipedia.org/wiki/Battle_of_Stalingrad',
+    'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
+]
+frontier = BST()
+for url in seed_urls:
+    frontier.insert(Link(url,1000000))
+crawl(frontier)
 
 
 
