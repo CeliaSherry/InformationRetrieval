@@ -3,9 +3,31 @@ from urllib.robotparser import RobotFileParser
 import json
 from bs4 import BeautifulSoup
 import pickle
+import time
 
 robots_dict = {}
 outlinks_dict = {}
+visited_dict = {}
+
+
+# Stores links, the time they were found, and the number of inlinks
+class Link:
+    def __init__(self, link, count=1):
+        self.link = link
+        self.count = count
+        self.time = time.time()
+
+    def __eq__(self, other):
+        return self.link == other.link
+
+    def __lt__(self, other):
+        return (self.count < other.count) or (self.count == other.count and self.time > other.time)
+
+    def __gt__(self, other):
+        return (self.count > other.count) or (self.count == other.count and other.time > self.time)
+
+    def merge(self, other):
+        self.count += 1
 
 
 # Canonicalize URLs to use as IDs
@@ -69,8 +91,10 @@ def parse_page(url, http_response, outlinks):
     for a in soup.find_all('a', href=True):
         link = url_canonicalization(a['href'], base)
         if ('javascript' not in link) and ('.pdf' not in link):
-            frontier.insert(Key(link))
+            frontier.insert(Link(link))
             outlinks.append(link)
+
+    # Store outlinks
     outlinks_dict[url] = outlinks
     return raw, body, header, title
 
