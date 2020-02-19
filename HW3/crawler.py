@@ -99,6 +99,13 @@ def parse_page(url, http_response, outlinks):
     return raw, body, header, title
 
 
+# Writes cleaned HTML to file.  Will be able to reuse code from Assignments 1 and 2.
+def write_to_file(body, header, title, url, file_name):
+    f = open(file_name, "w")
+    text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + '</TEXT></DOC>'
+    f.write(text)
+    f.close()
+
 
 
 
