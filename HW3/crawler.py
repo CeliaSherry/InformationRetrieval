@@ -18,6 +18,7 @@ def url_canonicalization(url, base=None):
     stage = url.rsplit('://')
     deduped = stage[1].replace('//','/')
     url = stage[0] + '://' + deduped
+
     return url
 
 

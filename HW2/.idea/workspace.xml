@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="42093504-97b8-4b3b-8492-cb8bdcafc273" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../HW3/.idea/HW3.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../HW3/.idea/HW3.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../HW3/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../HW3/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../HW3/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../HW3/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../HW3/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HW3/crawler.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../HW3/crawler.py" beforeDir="false" afterPath="$PROJECT_DIR$/../HW3/crawler.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
