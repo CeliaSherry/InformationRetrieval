@@ -4,6 +4,7 @@ import json
 from bs4 import BeautifulSoup
 import pickle
 import time
+import urllib.request
 
 robots_dict = {}
 outlinks_dict = {}
@@ -69,7 +70,7 @@ def check_robot(url):
 
 # Returns HTML from url, the <p> body of HTML, the <h> header of HTML, and the title of HTML
 # Adds outlinks for page to outlinks dict
-def parse_page(url, http_response, outlinks):
+def parse_page(url, http_response):
     outlinks = []
 
     raw = http_response.read()
@@ -107,8 +108,66 @@ def write_to_file(body, header, title, url, file_name):
     f.close()
 
 
+# Write outlinks for url to file
+def dump_outlinks():
+    f = open('./outlinks','w')
+    json.dump(outlinks_dict, f)
+    f.close()
 
 
+# Crawl URLs in frontier
+def crawl(frontier, limit=1):
+    crawled_count = 0
+    while crawled_count < limit:
+        start_time = time.time()
+        url = frontier.remove_next().link
+        # If URL has been visited or not allowed to be crawled by robot.txt, skip
+        if url in visited_dict or not check_robot(url):
+            continue
+        visited_dict.add(url)
+        time1 = time.time()
+        time2, time3, time4 = None
+        parse_time, store_time = 0
+        try:
+            print("Beginning {0}".format(url))
+            time1 = time.time()
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                time2 = time.time()
+                raw, body, header, title = parse_page(url, resp)
+                time3 = time.time()
+                write_to_file(body, header, title, url, './Files/content-{0}'.format(crawled_count))
+                time4 = time.time()
+                request_time = time2-time1
+                parse_time = time3-time2
+                store_time = time4-time3
+                crawled_count += 1
+        except Exception:
+            continue
+
+        sleep = parse_time + store_time + request_time
+
+        # Politeness: if 1 second hasn't passed from last request, sleep remaining time
+        if sleep <= 1:
+            time.sleep(1-sleep)
+
+        # Dump frontier and visited dicts every 100 files so don't need to start from beginning in case of crash
+        if (crawled_count % 100) == 0:
+            frontier_output = open('./frontier', 'wb')
+            visited_output = open('./visited', 'wb')
+            pickle.dump(frontier, frontier_output)
+            pickle.dump(visited_dict, visited_output)
+            frontier_output.close()
+            visited_output.close()
+    # dump all outlinks
+    dump_outlinks()
+
+
+
+
+
+
+# UPDATE LIMIT IN CRAWL
+# CREATE FRONTIER
 
 
 
