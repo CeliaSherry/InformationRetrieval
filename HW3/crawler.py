@@ -163,6 +163,7 @@ def main():
         #,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
     ]
     frontier = MinHeap()
+    print("test")
     for url in seed_urls:
         new_node = QueueLink(url, 1000000)
         outlinks_dict[url] = new_node
@@ -172,7 +173,7 @@ def main():
 
 
 
-
+main()
 
 
 
@@ -183,6 +184,7 @@ def main():
 # UPDATE LIMIT IN CRAWL
 # CREATE FRONTIER
 # LOAD FRONTIER/RESTART
+# CHECK THAT GT AND LT CORRECT- crawls more inlinks first
 
 
 
