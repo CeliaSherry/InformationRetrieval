@@ -9,6 +9,7 @@ from frontier import MinHeap, QueueLink
 
 robots_dict = {}
 outlinks_dict = {}
+queue = {}
 visited_set = set()
 
 
@@ -27,8 +28,11 @@ def url_canonicalization(url, base=None):
     url = url.rsplit('#', 1)[0]
     # Remove duplicate slashes
     stage = url.rsplit('://')
-    deduped = stage[1].replace('//','/')
-    url = stage[0] + '://' + deduped
+    if len(stage) > 1:
+        deduped = stage[1].replace('//','/')
+        url = stage[0] + '://' + deduped
+    else:
+        url = url.replace('//','/')
 
     return url
 
@@ -100,7 +104,7 @@ def crawl(frontier, limit=1):
         start_time = time.time()
         next_link = frontier.pop()
         url = next_link.link
-        outlinks_dict.pop(url)
+        queue.pop(url)
 
 
         # If URL has been visited or not allowed to be crawled by robot.txt, skip
@@ -108,25 +112,29 @@ def crawl(frontier, limit=1):
             continue
         visited_set.add(url)
         time1 = time.time()
-        time2, time3, time4 = None
-        parse_time, store_time = 0
+        time2 = None
+        time3 = None
+        time4 = None
+        parse_time = 0
+        store_time = 0
         try:
             print("Beginning {0}".format(url))
             time1 = time.time()
             with urllib.request.urlopen(url, timeout=5) as resp:
                 time2 = time.time()
                 raw, body, header, title, outlinks = parse_page(url, resp)
+                outlinks_dict[url] = outlinks
                 for link in outlinks:
                     if link not in visited_set:
                         try:
-                            outlinks_dict[link].add_inlinks(1)
+                            queue[link].add_inlinks(1)
                         except KeyError:
                             new_element = QueueLink(link, 1)
-                            outlinks_dict[link] = new_element
+                            queue[link] = new_element
                             frontier.insert(new_element)
 
                 time3 = time.time()
-                write_to_file(body, header, title, url, './Files/content-{0}'.format(crawled_count))
+                write_to_file(body, header, title, url, './Files/content-{0}.txt'.format(crawled_count))
                 time4 = time.time()
                 request_time = time2-time1
                 parse_time = time3-time2
@@ -136,37 +144,36 @@ def crawl(frontier, limit=1):
         except Exception:
             continue
 
-        sleep = parse_time + store_time + request_time
+        s = parse_time + store_time + request_time
 
         # Politeness: if 1 second hasn't passed from last request, sleep remaining time
-        if sleep <= 1:
-            time.sleep(1-sleep)
+        if s <= 1:
+            time.sleep(1-s)
 
         # Dump frontier and visited dicts every 100 files so don't need to start from beginning in case of crash
         if (crawled_count % 100) == 0:
-            frontier_output = open('./frontier', 'wb')
-            visited_output = open('./visited', 'wb')
+            frontier_output = open('./Pickles/frontier', 'wb')
+            visited_output = open('./Pickles/visited', 'wb')
             pickle.dump(frontier, frontier_output)
             pickle.dump(visited_set, visited_output)
             frontier_output.close()
             visited_output.close()
-    # dump all outlinks
-    dump_outlinks()
+            # dump all outlinks
+            dump_outlinks()
 
 
 def main():
     seed_urls = [
         'http://www.history.com/topics/world-war-ii',
-        'http://en.wikipedia.org/wiki/World_War_II',
-        'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
-        'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
+        'http://en.wikipedia.org/wiki/World_War_II'
+        #'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
+        #'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
         #,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
     ]
     frontier = MinHeap()
-    print("test")
     for url in seed_urls:
         new_node = QueueLink(url, 1000000)
-        outlinks_dict[url] = new_node
+        queue[url] = new_node
         frontier.insert(new_node)
 
     crawl(frontier)
@@ -174,6 +181,7 @@ def main():
 
 
 main()
+print(outlinks_dict)
 
 
 

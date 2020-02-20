@@ -40,13 +40,13 @@ class QueueLink:
     def add_inlinks(self, count):
         self.in_links += count
 
-    def __lt__(self, other):
+    def __gt__(self, other):
         return (self.in_links < other.in_links) or (self.in_links == other.in_links and self.timestamp > other.timestamp)
 
     def __eq__(self, other):
         return self.in_links == other.in_links
 
-    def __gt__(self, other):
+    def __lt__(self, other):
         return (self.in_links > other.in_links) or (
                     self.in_links == other.in_links and self.timestamp < other.timestamp)
 
