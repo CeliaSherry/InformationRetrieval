@@ -5,11 +5,11 @@ from bs4 import BeautifulSoup
 import pickle
 import time
 import urllib.request
+from frontier import MinHeap, QueueLink
 
 robots_dict = {}
 outlinks_dict = {}
-visited_dict = {}
-
+visited_set = set()
 
 
 # Canonicalize URLs to use as IDs
@@ -73,12 +73,9 @@ def parse_page(url, http_response):
     for a in soup.find_all('a', href=True):
         link = url_canonicalization(a['href'], base)
         if ('javascript' not in link) and ('.pdf' not in link):
-            frontier.insert(Link(link))
             outlinks.append(link)
 
-    # Store outlinks
-    outlinks_dict[url] = outlinks
-    return raw, body, header, title
+    return raw, body, header, title, outlinks
 
 
 # Writes cleaned HTML to file.  Will be able to reuse code from Assignments 1 and 2.
@@ -101,11 +98,15 @@ def crawl(frontier, limit=1):
     crawled_count = 0
     while crawled_count < limit:
         start_time = time.time()
-        url = frontier.remove_next().link
+        next_link = frontier.pop()
+        url = next_link.link
+        outlinks_dict.pop(url)
+
+
         # If URL has been visited or not allowed to be crawled by robot.txt, skip
-        if url in visited_dict or not check_robot(url):
+        if url in visited_set or not check_robot(url):
             continue
-        visited_dict.add(url)
+        visited_set.add(url)
         time1 = time.time()
         time2, time3, time4 = None
         parse_time, store_time = 0
@@ -114,7 +115,16 @@ def crawl(frontier, limit=1):
             time1 = time.time()
             with urllib.request.urlopen(url, timeout=5) as resp:
                 time2 = time.time()
-                raw, body, header, title = parse_page(url, resp)
+                raw, body, header, title, outlinks = parse_page(url, resp)
+                for link in outlinks:
+                    if link not in visited_set:
+                        try:
+                            outlinks_dict[link].add_inlinks(1)
+                        except KeyError:
+                            new_element = QueueLink(link, 1)
+                            outlinks_dict[link] = new_element
+                            frontier.insert(new_element)
+
                 time3 = time.time()
                 write_to_file(body, header, title, url, './Files/content-{0}'.format(crawled_count))
                 time4 = time.time()
@@ -122,6 +132,7 @@ def crawl(frontier, limit=1):
                 parse_time = time3-time2
                 store_time = time4-time3
                 crawled_count += 1
+                frontier.heapify()
         except Exception:
             continue
 
@@ -136,24 +147,36 @@ def crawl(frontier, limit=1):
             frontier_output = open('./frontier', 'wb')
             visited_output = open('./visited', 'wb')
             pickle.dump(frontier, frontier_output)
-            pickle.dump(visited_dict, visited_output)
+            pickle.dump(visited_set, visited_output)
             frontier_output.close()
             visited_output.close()
     # dump all outlinks
     dump_outlinks()
 
 
-seed_urls = [
-    'http://www.history.com/topics/world-war-ii',
-    'http://en.wikipedia.org/wiki/World_War_II',
-    'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
-    'http://en.wikipedia.org/wiki/Battle_of_Stalingrad',
-    'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
-]
-frontier = BST()
-for url in seed_urls:
-    frontier.insert(Link(url, 1000000))
-crawl(frontier)
+def main():
+    seed_urls = [
+        'http://www.history.com/topics/world-war-ii',
+        'http://en.wikipedia.org/wiki/World_War_II',
+        'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
+        'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
+        #,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
+    ]
+    frontier = MinHeap()
+    for url in seed_urls:
+        new_node = QueueLink(url, 1000000)
+        outlinks_dict[url] = new_node
+        frontier.insert(new_node)
+
+    crawl(frontier)
+
+
+
+
+
+
+
+
 
 
 
