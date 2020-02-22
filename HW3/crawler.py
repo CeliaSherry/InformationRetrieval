@@ -79,7 +79,6 @@ def parse_page(url, http_response):
         link = url_canonicalization(a['href'], base)
         if ('javascript' not in link) and ('.pdf' not in link):
             outlinks.append(link)
-            outlinks_dict[link] = outlinks
             if link not in visited_set:
                 try:
                     queue[link].add_inlinks(1)
@@ -87,6 +86,7 @@ def parse_page(url, http_response):
                     new_element = QueueLink(link, 1)
                     queue[link] = new_element
                     frontier.insert(new_element)
+    outlinks_dict[link] = outlinks
 
     return raw, body, header, title, outlinks
 
@@ -99,16 +99,9 @@ def write_to_file(body, header, title, url, file_name):
     f.close()
 
 
-# Write outlinks for url to file
-def dump_outlinks():
-    f = open('./Pickles/outlinks','w')
-    json.dump(outlinks_dict, f)
-    f.close()
-
-
 # Crawl URLs in frontier
-def crawl(frontier, limit=10):
-    crawled_count = 0
+def crawl(frontier, limit=101, crawled_count=0):
+    #crawled_count = 0
     while crawled_count < limit:
         start_time = time.time()
         next_link = frontier.pop()
@@ -166,12 +159,17 @@ def crawl(frontier, limit=10):
         if (crawled_count % 100) == 0:
             frontier_output = open('./Pickles/frontier', 'wb')
             visited_output = open('./Pickles/visited', 'wb')
+            crawled_count_output = open('./Pickles/crawled_count','wb')
             pickle.dump(frontier, frontier_output)
             pickle.dump(visited_set, visited_output)
+            pickle.dump(crawled_count, crawled_count_output)
             frontier_output.close()
             visited_output.close()
+            crawled_count_output.close()
             # dump all outlinks
-            dump_outlinks()
+            outlinks_output = open('./Pickles/outlinks', 'wb')
+            pickle.dump(outlinks_dict, outlinks_output)
+            outlinks_output.close()
 
 
 def main():
@@ -189,6 +187,7 @@ def main():
         frontier.insert(new_node)
 
     crawl(frontier)
+    print(frontier.size())
 
 
 
