@@ -57,7 +57,7 @@ def check_robot(url):
 # Returns HTML from url, the <p> body of HTML, the <h> header of HTML, and the title of HTML
 # Adds outlinks for page to outlinks dict
 def parse_page(url, http_response):
-    outlinks = []
+    outlinks = set()
 
     raw = http_response.read()
     # Use BeautifulSoup to parse raw HTML
@@ -78,7 +78,7 @@ def parse_page(url, http_response):
     for a in soup.find_all('a', href=True):
         link = url_canonicalization(a['href'], base)
         if ('javascript' not in link) and ('.pdf' not in link):
-            outlinks.append(link)
+            outlinks.add(link)
             if link not in visited_set:
                 try:
                     queue[link].add_inlinks(1)
@@ -86,7 +86,7 @@ def parse_page(url, http_response):
                     new_element = QueueLink(link, 1)
                     queue[link] = new_element
                     frontier.insert(new_element)
-    outlinks_dict[link] = outlinks
+    outlinks_dict[url] = outlinks
 
     return raw, body, header, title, outlinks
 
@@ -170,6 +170,22 @@ def crawl(frontier, limit=101, crawled_count=0):
             outlinks_output = open('./Pickles/outlinks', 'wb')
             pickle.dump(outlinks_dict, outlinks_output)
             outlinks_output.close()
+
+
+def load_frontier():
+    crawled_count_file = open("Pickles/crawled_count","rb")
+    frontier_file = open("Pickles/frontier", "rb")
+    visited_file = open("Pickles/visited", "rb")
+    outlinks_file = open("Pickles/outlinks", "rb")
+    crawled_count = pickle.load(crawled_count_file)
+    frontier = pickle.load(frontier_file)
+    visited = pickle.load(visited_file)
+    outlinks = pickle.load(outlinks_file)
+    crawled_count_file.close()
+    frontier_file.close()
+    visited_file.close()
+    outlinks_file.close()
+    return crawled_count, frontier, visited, outlinks
 
 
 def main():
