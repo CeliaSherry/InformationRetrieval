@@ -40,3 +40,4 @@ def get_inlinks():
     dump_inlinks()
 
 
+#get_inlinks()
