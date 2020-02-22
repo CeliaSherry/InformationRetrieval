@@ -82,12 +82,12 @@ def parse_page(url, http_response):
             if link not in visited_set:
                 try:
                     if link.__contains__('world-war-ii') or link.__contains__('stalingrad'):
-                        queue[link].add_inlinks(2)
+                        queue[link].add_inlinks(20)
                     else:
                         queue[link].add_inlinks(1)
                 except KeyError:
                     if link.__contains__('world-war-ii') or link.__contains__('stalingrad'):
-                        new_element = QueueLink(link, 2)
+                        new_element = QueueLink(link, 20)
                     else:
                         new_element = QueueLink(link, 1)
                     queue[link] = new_element
@@ -192,9 +192,9 @@ def load_frontier():
 def main():
     seed_urls = [
         'http://www.history.com/topics/world-war-ii',
-        #'http://en.wikipedia.org/wiki/World_War_II',
-        'http://www.history.com/topics/world-war-ii/battle-of-stalingrad'
-        #'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
+        'http://en.wikipedia.org/wiki/World_War_II',
+        'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
+        'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
         #,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
     ]
     for url in seed_urls:
