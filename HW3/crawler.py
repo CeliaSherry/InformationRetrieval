@@ -98,9 +98,10 @@ def parse_page(url, http_response):
 
 
 # Writes cleaned HTML to file.  Will be able to reuse code from Assignments 1 and 2.
-def write_to_file(body, header, title, url, file_name):
+def write_to_file(raw, body, header, title, url, file_name):
     f = open(file_name, "a+")
-    text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + '</TEXT></DOC>\n'
+    text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + \
+           '</TEXT>' + '<CONTENT>' + raw + '</CONTENT></DOC>\n'
     f.write(text)
     f.close()
 
@@ -131,7 +132,7 @@ def crawl(frontier, limit=10, crawled_count=0):
                 time2 = time.time()
                 raw, body, header, title, outlinks = parse_page(url, resp)
                 time3 = time.time()
-                write_to_file(body, header, title, url, './Files/content.txt')
+                write_to_file(raw, body, header, title, url, './Files/content.txt')
                 time4 = time.time()
                 request_time = time2-time1
                 parse_time = time3-time2
@@ -217,6 +218,7 @@ main()
 
 # UPDATE LIMIT IN CRAWL
 # LOAD FRONTIER/RESTART
+# HOW TO MERGE ES
 
 
 
