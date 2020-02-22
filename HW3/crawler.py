@@ -11,6 +11,7 @@ robots_dict = {}
 outlinks_dict = {}
 queue = {}
 visited_set = set()
+frontier = MinHeap()
 
 
 # Canonicalize URLs to use as IDs
@@ -78,6 +79,14 @@ def parse_page(url, http_response):
         link = url_canonicalization(a['href'], base)
         if ('javascript' not in link) and ('.pdf' not in link):
             outlinks.append(link)
+            outlinks_dict[link] = outlinks
+            if link not in visited_set:
+                try:
+                    queue[link].add_inlinks(1)
+                except KeyError:
+                    new_element = QueueLink(link, 1)
+                    queue[link] = new_element
+                    frontier.insert(new_element)
 
     return raw, body, header, title, outlinks
 
@@ -92,13 +101,13 @@ def write_to_file(body, header, title, url, file_name):
 
 # Write outlinks for url to file
 def dump_outlinks():
-    f = open('./outlinks','w')
+    f = open('./Pickles/outlinks','w')
     json.dump(outlinks_dict, f)
     f.close()
 
 
 # Crawl URLs in frontier
-def crawl(frontier, limit=1):
+def crawl(frontier, limit=10):
     crawled_count = 0
     while crawled_count < limit:
         start_time = time.time()
@@ -118,20 +127,21 @@ def crawl(frontier, limit=1):
         parse_time = 0
         store_time = 0
         try:
-            print("Beginning {0}".format(url))
+            print("Crawling {0}".format(url))
             time1 = time.time()
             with urllib.request.urlopen(url, timeout=5) as resp:
                 time2 = time.time()
                 raw, body, header, title, outlinks = parse_page(url, resp)
-                outlinks_dict[url] = outlinks
-                for link in outlinks:
-                    if link not in visited_set:
-                        try:
-                            queue[link].add_inlinks(1)
-                        except KeyError:
-                            new_element = QueueLink(link, 1)
-                            queue[link] = new_element
-                            frontier.insert(new_element)
+                # Move to parse page function so you only have to go through once
+                #outlinks_dict[url] = outlinks
+                #for link in outlinks:
+                #    if link not in visited_set:
+                #        try:
+                #            queue[link].add_inlinks(1)
+                #        except KeyError:
+                #            new_element = QueueLink(link, 1)
+                #            queue[link] = new_element
+                #            frontier.insert(new_element)
 
                 time3 = time.time()
                 write_to_file(body, header, title, url, './Files/content-{0}.txt'.format(crawled_count))
@@ -141,10 +151,12 @@ def crawl(frontier, limit=1):
                 store_time = time4-time3
                 crawled_count += 1
                 frontier.heapify()
-        except Exception:
+        except Exception as e:
+            print(e)
             continue
 
         s = parse_time + store_time + request_time
+        print(s)
 
         # Politeness: if 1 second hasn't passed from last request, sleep remaining time
         if s <= 1:
@@ -165,12 +177,12 @@ def crawl(frontier, limit=1):
 def main():
     seed_urls = [
         'http://www.history.com/topics/world-war-ii',
-        'http://en.wikipedia.org/wiki/World_War_II'
-        #'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
-        #'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
+        'http://en.wikipedia.org/wiki/World_War_II',
+        'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
+        'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
         #,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
     ]
-    frontier = MinHeap()
+    #frontier = MinHeap()
     for url in seed_urls:
         new_node = QueueLink(url, 1000000)
         queue[url] = new_node
@@ -181,7 +193,7 @@ def main():
 
 
 main()
-print(outlinks_dict)
+
 
 
 
@@ -192,7 +204,6 @@ print(outlinks_dict)
 # UPDATE LIMIT IN CRAWL
 # CREATE FRONTIER
 # LOAD FRONTIER/RESTART
-# CHECK THAT GT AND LT CORRECT- crawls more inlinks first
 
 
 
