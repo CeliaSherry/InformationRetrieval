@@ -93,15 +93,14 @@ def parse_page(url, http_response):
 
 # Writes cleaned HTML to file.  Will be able to reuse code from Assignments 1 and 2.
 def write_to_file(body, header, title, url, file_name):
-    f = open(file_name, "w")
-    text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + '</TEXT></DOC>'
+    f = open(file_name, "a+")
+    text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + '</TEXT></DOC>\n'
     f.write(text)
     f.close()
 
 
 # Crawl URLs in frontier
-def crawl(frontier, limit=101, crawled_count=0):
-    #crawled_count = 0
+def crawl(frontier, limit=10, crawled_count=0):
     while crawled_count < limit:
         start_time = time.time()
         next_link = frontier.pop()
@@ -125,19 +124,8 @@ def crawl(frontier, limit=101, crawled_count=0):
             with urllib.request.urlopen(url, timeout=5) as resp:
                 time2 = time.time()
                 raw, body, header, title, outlinks = parse_page(url, resp)
-                # Move to parse page function so you only have to go through once
-                #outlinks_dict[url] = outlinks
-                #for link in outlinks:
-                #    if link not in visited_set:
-                #        try:
-                #            queue[link].add_inlinks(1)
-                #        except KeyError:
-                #            new_element = QueueLink(link, 1)
-                #            queue[link] = new_element
-                #            frontier.insert(new_element)
-
                 time3 = time.time()
-                write_to_file(body, header, title, url, './Files/content-{0}.txt'.format(crawled_count))
+                write_to_file(body, header, title, url, './Files/content.txt')
                 time4 = time.time()
                 request_time = time2-time1
                 parse_time = time3-time2
@@ -170,6 +158,10 @@ def crawl(frontier, limit=101, crawled_count=0):
             outlinks_output = open('./Pickles/outlinks', 'wb')
             pickle.dump(outlinks_dict, outlinks_output)
             outlinks_output.close()
+            # dump queue
+            queue_output = open('./Pickles/queue', 'wb')
+            pickle.dump(queue, queue_output)
+            queue_output.close()
 
 
 def load_frontier():
@@ -177,15 +169,18 @@ def load_frontier():
     frontier_file = open("Pickles/frontier", "rb")
     visited_file = open("Pickles/visited", "rb")
     outlinks_file = open("Pickles/outlinks", "rb")
+    queue_file = open("Pickles/queue", "rb")
     crawled_count = pickle.load(crawled_count_file)
     frontier = pickle.load(frontier_file)
     visited = pickle.load(visited_file)
     outlinks = pickle.load(outlinks_file)
+    queue = pickle.load(queue_file)
     crawled_count_file.close()
     frontier_file.close()
     visited_file.close()
     outlinks_file.close()
-    return crawled_count, frontier, visited, outlinks
+    queue_file.close()
+    return crawled_count, frontier, visited, outlinks, queue
 
 
 def main():
@@ -196,14 +191,12 @@ def main():
         'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
         #,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
     ]
-    #frontier = MinHeap()
     for url in seed_urls:
         new_node = QueueLink(url, 1000000)
         queue[url] = new_node
         frontier.insert(new_node)
 
     crawl(frontier)
-    print(frontier.size())
 
 
 
@@ -217,7 +210,6 @@ main()
 
 
 # UPDATE LIMIT IN CRAWL
-# CREATE FRONTIER
 # LOAD FRONTIER/RESTART
 
 
