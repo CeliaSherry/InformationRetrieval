@@ -1,6 +1,5 @@
 from urllib.parse import urlparse, urljoin
 from urllib.robotparser import RobotFileParser
-import json
 from bs4 import BeautifulSoup
 import pickle
 import time
@@ -15,8 +14,6 @@ class Crawler:
         self.visited_set = visited_set
         self.frontier = frontier
         self.robots_dict = robots_dict
-
-
 
     # Canonicalize URLs to use as IDs
     def url_canonicalization(self, url, base=None):
@@ -41,7 +38,6 @@ class Crawler:
 
         return url
 
-
     # Check robots.txt for url.  Return true if allowed, false if not.
     def check_robot(self, url):
         scheme, netloc, path, params, query, fragment = urlparse(url)
@@ -56,7 +52,6 @@ class Crawler:
             return r.can_fetch("*", url)
         except Exception:
             return True
-
 
     # Returns HTML from url, the <p> body of HTML, the <h> header of HTML, and the title of HTML
     # Adds outlinks for page to outlinks dict
@@ -100,15 +95,15 @@ class Crawler:
 
         return raw, body, header, title, outlinks
 
-
     # Writes cleaned HTML to file.  Will be able to reuse code from Assignments 1 and 2.
     def write_to_file(self, raw, body, header, title, url, file_name):
         f = open(file_name, "a+")
+        #text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + \
+        #       '</TEXT>' + '<CONTENT>' + raw.decode('utf-8') + '</CONTENT></DOC>\n'
         text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + \
-               '</TEXT>' + '<CONTENT>' + raw.decode('utf-8') + '</CONTENT></DOC>\n'
+               '</TEXT></DOC>\n'
         f.write(text)
         f.close()
-
 
     # Crawl URLs in frontier
     def crawl(self, limit=10, crawled_count=0):
