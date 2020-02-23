@@ -17,32 +17,32 @@ class Crawler:
 
     # Canonicalize URLs to use as IDs
     def url_canonicalization(self, url, base=None):
-        # Convert scheme and host to lowercase
-        parse = urlparse(url)
-        scheme = parse.scheme.lower()
-        domain = parse.netloc.lower()
-        path = parse.path
-        url = scheme + '://' + domain + path
-
-
-        if not url.startswith("http"):
+        if base is not None and not url.startswith("http"):
             url = urljoin(base, url)
-        # Remove port 80 from http URLs and port 443 from HTTPS URLs
-        if url.startswith("http") and url.endswith(":80"):
-            url = url[:-3]
-        if url.startswith("https") and url.endswith(":443"):
-            url = url[-4]
-        # Remove the fragment after #
-        url = url.rsplit('#', 1)[0]
-        # Remove duplicate slashes
-        stage = url.rsplit('://')
-        if len(stage) > 1:
-            deduped = stage[1].replace('//','/')
-            url = stage[0] + '://' + deduped
-        else:
-            url = url.replace('//','/')
+        parse = urlparse(url)
+        output = ''
+        output += parse.scheme.lower() + "://"
+        output += self.clean_domain(parse.netloc.lower(), parse.scheme.lower())
+        if len(parse.path) >  0:
+            output += self.clean_path(parse.path)
+        return output
 
-        return url
+    def clean_path(self, p):
+        comps = p.split('/')
+        output = ''
+        for cmp in comps:
+            if len(cmp) > 0 and cmp != '/':
+                output += '/' + cmp
+        return output
+
+    def clean_domain(self, domain, scheme):
+        if scheme == 'http':
+            if domain.endswith(':80'):
+                return domain[:-len(':80')]
+        elif scheme == 'https':
+            if domain.endswith(':443'):
+                return domain[:-len(':443')]
+        return domain
 
     # Check robots.txt for url.  Return true if allowed, false if not.
     def check_robot(self, url):
