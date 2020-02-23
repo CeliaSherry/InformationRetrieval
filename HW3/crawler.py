@@ -18,7 +18,13 @@ class Crawler:
     # Canonicalize URLs to use as IDs
     def url_canonicalization(self, url, base=None):
         # Convert scheme and host to lowercase
-        url = url.lower()
+        parse = urlparse(url)
+        scheme = parse.scheme.lower()
+        domain = parse.netloc.lower()
+        path = parse.path
+        url = scheme + '://' + domain + path
+
+
         if not url.startswith("http"):
             url = urljoin(base, url)
         # Remove port 80 from http URLs and port 443 from HTTPS URLs
