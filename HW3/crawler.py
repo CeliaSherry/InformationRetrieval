@@ -7,6 +7,14 @@ import urllib.request
 from frontier import MinHeap, QueueLink
 
 
+blacklist_urls = [
+    'http://en.wikipedia.org/wiki/International_Standard_Book_Number',
+    'http://en.wikipedia.org/wiki/JSTOR',
+    'http://en.wikipedia.org/wiki/Digital_object_identifier',
+    'http://en.wikipedia.org/wiki/Cambridge_University_Press'
+]
+
+
 class Crawler:
     def __init__(self, outlinks_dict={}, queue={}, visited_set=set(), frontier=MinHeap(), robots_dict={}):
         self.outlinks_dict = outlinks_dict
@@ -14,6 +22,11 @@ class Crawler:
         self.visited_set = visited_set
         self.frontier = frontier
         self.robots_dict = robots_dict
+        for url in blacklist_urls:
+            self.visited_set.add(url)
+        keywords = ["world", 'war', "ii", "ww2", "wwii", "stalingrad", "united",
+                    "states", "nazi", "germany", "japan", "battles", "wwtwo", "worldwar2"]
+        self.keywords = set(keywords)
 
     # Canonicalize URLs to use as IDs
     def url_canonicalization(self, url, base=None):
@@ -23,7 +36,7 @@ class Crawler:
         output = ''
         output += parse.scheme.lower() + "://"
         output += self.clean_domain(parse.netloc.lower(), parse.scheme.lower())
-        if len(parse.path) >  0:
+        if len(parse.path) > 0:
             output += self.clean_path(parse.path)
         return output
 
@@ -31,8 +44,10 @@ class Crawler:
         comps = p.split('/')
         output = ''
         for cmp in comps:
+
             if len(cmp) > 0 and cmp != '/':
                 output += '/' + cmp
+
         return output
 
     def clean_domain(self, domain, scheme):
@@ -82,16 +97,16 @@ class Crawler:
         # Get outlinks
         for a in soup.find_all('a', href=True):
             link = self.url_canonicalization(a['href'], base)
-            if ('javascript' not in link) and ('.pdf' not in link):
+            if ('javascript' not in link) and ('.pdf' not in link) and ('video' not in link) and ('jpeg' not in link):
                 outlinks.add(link)
-                if link not in self.visited_set:
+                if (link not in self.visited_set) and (link != url):
                     try:
-                        if link.__contains__('world-war-ii') or link.__contains__('stalingrad'):
+                        if any(substring in link.lower() for substring in self.keywords):
                             self.queue[link].add_inlinks(20)
                         else:
                             self.queue[link].add_inlinks(1)
                     except KeyError:
-                        if link.__contains__('world-war-ii') or link.__contains__('stalingrad'):
+                        if any(substring in link.lower() for substring in self.keywords):
                             new_element = QueueLink(link, 20)
                         else:
                             new_element = QueueLink(link, 1)
@@ -104,7 +119,7 @@ class Crawler:
     # Writes cleaned HTML to file.  Will be able to reuse code from Assignments 1 and 2.
     def write_to_file(self, raw, body, header, title, url, file_name):
         f = open(file_name, "a+")
-        #text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + \
+        # text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + \
         #       '</TEXT>' + '<CONTENT>' + raw.decode('utf-8') + '</CONTENT></DOC>\n'
         text = '<DOC><DOCNO>' + url + '</DOCNO><HEADER>' + header + '</HEADER><TITLE>' + title + '</TITLE><TEXT>' + body + \
                '</TEXT></DOC>\n'
@@ -112,13 +127,12 @@ class Crawler:
         f.close()
 
     # Crawl URLs in frontier
-    def crawl(self, limit=10, crawled_count=0):
+    def crawl(self, limit=40000, crawled_count=0):
         while crawled_count < limit:
             start_time = time.time()
             next_link = self.frontier.pop()
             url = next_link.link
             self.queue.pop(url)
-
 
             # If URL has been visited or not allowed to be crawled by robot.txt, skip
             if url in self.visited_set or not self.check_robot(url):
@@ -149,7 +163,7 @@ class Crawler:
                 continue
 
             s = parse_time + store_time + request_time
-            print(s)
+            print(crawled_count)
 
             # Politeness: if 1 second hasn't passed from last request, sleep remaining time
             if s <= 1:
@@ -159,7 +173,7 @@ class Crawler:
             if (crawled_count % 100) == 0:
                 frontier_output = open('./Pickles/frontier', 'wb')
                 visited_output = open('./Pickles/visited', 'wb')
-                crawled_count_output = open('./Pickles/crawled_count','wb')
+                crawled_count_output = open('./Pickles/crawled_count', 'wb')
                 pickle.dump(self.frontier, frontier_output)
                 pickle.dump(self.visited_set, visited_output)
                 pickle.dump(crawled_count, crawled_count_output)
@@ -175,14 +189,18 @@ class Crawler:
                 pickle.dump(self.queue, queue_output)
                 queue_output.close()
 
-
     def main(self):
         seed_urls = [
             'http://www.history.com/topics/world-war-ii',
             'http://en.wikipedia.org/wiki/World_War_II',
             'http://www.history.com/topics/world-war-ii/battle-of-stalingrad',
-            'http://en.wikipedia.org/wiki/Battle_of_Stalingrad'
-            #,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
+            'http://en.wikipedia.org/wiki/Battle_of_Stalingrad',
+            'https://www.britannica.com/event/battle-of-stalingrad',
+            'https://www.britannica.com/event/world-war-ii',
+            'http://www.bbc.co.uk/history/worldwars/wwtwo/',
+            'https://time.com/tag/world-war-ii/'
+            # 'https://www.historyplace.com/worldwar2/timeline/ww2time.htm'
+            # ,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
         ]
         for url in seed_urls:
             new_node = QueueLink(url, 1000000)
@@ -193,7 +211,7 @@ class Crawler:
 
 
 def load_frontier():
-    crawled_count_file = open("Pickles/crawled_count","rb")
+    crawled_count_file = open("Pickles/crawled_count", "rb")
     frontier_file = open("Pickles/frontier", "rb")
     visited_file = open("Pickles/visited", "rb")
     outlinks_file = open("Pickles/outlinks", "rb")
@@ -211,24 +229,15 @@ def load_frontier():
     return outlinks, queue, visited, frontier, crawled_count
 
 
-#crawler = Crawler()
-#crawler.main()
+crawler = Crawler()
+crawler.main()
 
 #outlinks, queue, visited, frontier, crawled_count = load_frontier()
 #crawler_restart = Crawler(outlinks, queue, visited, frontier)
 #crawler_restart.crawl(limit=10, crawled_count=crawled_count)
 
 
-
-
-
-
-
-
-# UPDATE LIMIT IN CRAWL
-# LOAD FRONTIER/RESTART
 # HOW TO MERGE ES
-# DON'T HAVE INLINKS/OUTLINKS BE SAME PAGE
 
-
-
+# exclude spanish wikipedia
+# may be repeats
