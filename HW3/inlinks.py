@@ -1,8 +1,10 @@
 import pickle
 from bs4 import BeautifulSoup
+import re
 
 
 inlinks_dict = {}
+
 
 def load_outlinks():
     outlinks_file = open("Pickles/outlinks", "rb")
@@ -11,11 +13,12 @@ def load_outlinks():
     return outlinks
 
 
-def get_docs(file):
-    f = file.read()
-    page = "<root>" + f + "</root>"
-    soup = BeautifulSoup(page, features='xml')
-    return soup.find_all('DOC')
+def get_docs():
+    doc_regex = re.compile('<DOC>.*?</DOC>', re.DOTALL)
+    f = open("Files/content.txt", "r")
+    contents = f.read()
+    documents = re.findall(doc_regex, contents)
+    return documents
 
 
 def dump_inlinks():
@@ -25,13 +28,16 @@ def dump_inlinks():
 
 
 def get_inlinks():
+    docno_regex = re.compile('<DOCNO>.*?</DOCNO>', re.DOTALL)
     outlinks = load_outlinks()
 
-    f = open("Files/content.txt", "r")
-    documents = get_docs(f)
+    documents = get_docs()
+    count = 1
     for document in documents:
+        print(count)
+        count += 1
         inlinks = []
-        doc_id = document.find('DOCNO').get_text().strip()
+        doc_id = ''.join(re.findall(docno_regex, document)).replace('<DOCNO>', '').replace('</DOCNO>', '')
 
         for key in outlinks:
             if doc_id in outlinks[key]:
@@ -40,4 +46,4 @@ def get_inlinks():
     dump_inlinks()
 
 
-#get_inlinks()
+get_inlinks()

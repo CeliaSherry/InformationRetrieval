@@ -11,7 +11,13 @@ blacklist_urls = [
     'http://en.wikipedia.org/wiki/International_Standard_Book_Number',
     'http://en.wikipedia.org/wiki/JSTOR',
     'http://en.wikipedia.org/wiki/Digital_object_identifier',
-    'http://en.wikipedia.org/wiki/Cambridge_University_Press'
+    'http://en.wikipedia.org/wiki/Cambridge_University_Press',
+    'http://en.wikipedia.org/wiki/Osprey_Publishing',
+    'http://en.wikipedia.org/wiki/Routledge',
+    'http://en.wikipedia.org/wiki/Wayback_Machine',
+    'http://www.history.com/this-day-in-history',
+    'http://www.history.com/schedule',
+    'https://www.aenetworks.com/terms'
 ]
 
 
@@ -24,8 +30,10 @@ class Crawler:
         self.robots_dict = robots_dict
         for url in blacklist_urls:
             self.visited_set.add(url)
-        keywords = ["world", 'war', "ii", "ww2", "wwii", "stalingrad", "united",
-                    "states", "nazi", "germany", "japan", "battles", "wwtwo", "worldwar2"]
+        keywords = ["world", 'war', "ii", "ww2", "wwii", "stalingrad", "nazi",
+                    "germany", "japan", "battles", "wwtwo", "worldwar2", "military",
+                    "allies", "axis", "soviet", "battle", "pearl", "harbor",
+                    "holocaust"]
         self.keywords = set(keywords)
 
     # Canonicalize URLs to use as IDs
@@ -101,13 +109,19 @@ class Crawler:
                 outlinks.add(link)
                 if (link not in self.visited_set) and (link != url):
                     try:
-                        if any(substring in link.lower() for substring in self.keywords):
-                            self.queue[link].add_inlinks(20)
+                        num = [substring in url.lower() for substring in self.keywords].count(True)
+                        if link.__contains__('world-war-ii') or link.__contains__('world_war_ii'):
+                            self.queue[link].add_inlinks(1000)
+                        if num > 0:
+                            self.queue[link].add_inlinks(100*num)
                         else:
                             self.queue[link].add_inlinks(1)
                     except KeyError:
-                        if any(substring in link.lower() for substring in self.keywords):
-                            new_element = QueueLink(link, 20)
+                        num = [substring in url.lower() for substring in self.keywords].count(True)
+                        if link.__contains__('world-war-ii') or link.__contains__('world_war_ii'):
+                            new_element = QueueLink(link, 1000)
+                        if num > 0:
+                            new_element = QueueLink(link, 100*num)
                         else:
                             new_element = QueueLink(link, 1)
                         self.queue[link] = new_element
@@ -198,8 +212,8 @@ class Crawler:
             'https://www.britannica.com/event/battle-of-stalingrad',
             'https://www.britannica.com/event/world-war-ii',
             'http://www.bbc.co.uk/history/worldwars/wwtwo/',
-            'https://time.com/tag/world-war-ii/'
-            # 'https://www.historyplace.com/worldwar2/timeline/ww2time.htm'
+            'https://time.com/tag/world-war-ii/',
+            'https://www.historyplace.com/worldwar2/timeline/ww2time.htm'
             # ,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
         ]
         for url in seed_urls:
