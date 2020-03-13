@@ -212,7 +212,7 @@ class Crawler:
             'https://www.britannica.com/event/battle-of-stalingrad',
             'https://www.britannica.com/event/world-war-ii',
             'http://www.bbc.co.uk/history/worldwars/wwtwo/',
-            'https://time.com/tag/world-war-ii/',
+            'https://time.com/tag/world-war-ii/'
             'https://www.historyplace.com/worldwar2/timeline/ww2time.htm'
             # ,'https://www.google.com/search?client=safari&rls=en&q=battle+of+stalingrad&ie=UTF-8&oe=UTF-8'
         ]
